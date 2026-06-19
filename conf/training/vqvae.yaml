@@ -1,0 +1,52 @@
+defaults:
+  - default
+
+# model specific hyperparameters
+lr: 1e-4
+weight_decay: 0.0
+
+max_epochs: 500 # deliberate overestimate; stop via checkpoints
+batch_scenes: 1
+
+max_batch_points: null # if set, skip batches where num points > this for memory reasons
+
+# For residual VQ, how aggressively do we replace unused codes
+# This is the EMA threshold of apperances per sample
+# we automatically scale this with batch_scenes
+threshold_ema_dead_code: 0.125
+
+precision: bf16-mixed
+
+# Defaults below are for VFront/ASE. PhotoShape uses recon_weight=12.5, vgg_weight=0.1.
+losses:
+  commit_weight: 0.25
+  entropy_weight: 0.1
+  rerendering:
+    recon_weight: 7.5
+    vgg_weight: 0.3 # perceptual term, similar to lpips
+    lpips_weight: 0.0
+    ssim_weight: 0.0
+    depth_weight: 0.0
+
+# training visual output configuration
+output:
+  render_frequency: 1
+  num_samples_train: 8
+  num_samples_val: 8
+
+# codebook usage data
+cb_usage_logging:
+  on_val: true
+  on_train: false # avoid overhead by default
+  slim_logging: true # if true, only logs usage_rates and entropies
+
+# free the CUDA cache periodically; the sparse ops tend to fragment memory
+free_cache:
+  enabled: true # whether to enable regular freeing of cache memory
+  frequency: 1 # frequency in steps to free cache
+
+# only used for tokenization, not training -> where to store the tokenized data
+tokenization:
+  output_dir: null
+  sort_by: "z"
+  generate_augmented_samples: false

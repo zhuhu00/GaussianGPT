@@ -1,0 +1,19 @@
+# PhotoShape raw Gaussian objects - VQ-VAE training and tokenization.
+defaults:
+  - points
+
+dataset_name: photoshape
+
+data_path: ???
+transforms_path: ??? # camera transforms
+
+train_split: null # optional; null uses the default split
+val_split: data_splits/photoshape_val.txt
+
+gaussian_subpath: point_cloud/iteration_30000/point_cloud.ply
+sh_degree: 1 # PhotoShape keeps view-dependent color (degree-1 SH)
+max_points: 10000000000 # effectively uncapped
+
+img_path: ??? # rendered reference images
+
+preload: true

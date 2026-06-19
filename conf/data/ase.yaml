@@ -1,0 +1,26 @@
+# ASE (Aria Synthetic Environments) raw Gaussian scenes - VQ-VAE training and tokenization.
+defaults:
+  - points
+
+dataset_name: ase
+
+data_path: ???
+transforms_path: ???
+
+train_split: data_splits/ase_train.txt
+val_split: data_splits/ase_val.txt
+
+gaussian_subpath: ckpts/point_cloud_30000.ply
+transforms_filename: transforms_train.json
+
+n_images: 12 # images loaded per scene for the re-rendering loss
+
+max_points: 1000000000 # effectively uncapped
+center_sample: false
+voxel_size: 0.025
+
+img_path: null # images are rendered on the fly from the Gaussians
+background_color: black
+
+# Scenes are full rooms, so train on camera-visible chunks.
+chunk_subsample: true

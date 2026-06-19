@@ -1,0 +1,36 @@
+defaults:
+  - default
+
+# optimization (Muon + AdamW; see utils/optim.py)
+lr: 1e-4
+weight_decay: 0.2
+muon_weight_decay_schedule: true # linearly decay weight decay over training
+
+max_epochs: 100
+batch_scenes: 4
+accumulate_grad_batches: 4
+
+# lower precision gives a solid speed-up here
+precision: bf16-mixed
+
+lr_schedule:
+  kind: cosine # constant | cosine | linear_warmup_warmdown
+
+# training output / inline evaluation
+output:
+  render_frequency: 10
+  checkpoint_frequency: null # falls back to render_frequency when null
+  num_samples: 4
+  temperature: 0.9
+  top_k: null
+  top_p: 0.9
+  batch_size: 4
+  views: 10
+  highres: false
+  skip_metrics: false
+  store_samples: true
+  eval_data_config: vfront_houses # raw data config composed for inline eval rendering
+
+gradient_clip:
+  algorithm: none # none | value | norm
+  val: 1.0

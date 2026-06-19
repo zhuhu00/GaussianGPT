@@ -1,0 +1,73 @@
+# Main VQ-VAE: sparse 3D CNN over per-voxel Gaussians (used for VFront and ASE).
+# See conf/model/vqvae_photoshape.yaml for the PhotoShape variant.
+embed_dim: 64
+outer_dim: 64
+leaky: false
+max_channel: 512
+stages: 3 # each stage downsamples by 2 per spatial axis
+
+grid_size: 0.025
+full_input: true
+
+# Collapse each voxel to its highest-opacity Gaussian. Off by default; enabling
+# it requires the optional torch_scatter dependency (see README install notes).
+make_unique: false
+gaussians_per_voxel: 1
+
+encoder:
+  in_c: ${model.outer_dim}
+  embed_dim: ${model.embed_dim}
+  max_channel: ${model.max_channel}
+  leaky: ${model.leaky}
+  dropout: 0.0
+  stages: ${model.stages}
+
+vq:
+  codebook_size: 4096
+  num_tokens: 1
+  kind: lfq # lfq | vq (vq only supported for num_tokens=1)
+
+decoder:
+  out_c: ${model.outer_dim}
+  embed_dim: ${model.embed_dim}
+  max_channel: ${model.max_channel}
+  leaky: ${model.leaky}
+  dropout: 0.0
+  stages: ${model.stages}
+  prune_thresh: [-1.0, -1.0, -3.0] # one entry per stage
+  prune_thresh_schedule: true
+
+# Define the behavior for each feature in conf.dataclasses.GaussianFeatures
+feature_configs:
+  coords:
+    in_input: false # part of the input, but not embedded as a feature
+    in_output: false # part of the output, but not as a prediction by a feature head
+  scales:
+    dimension: 3
+    in_input: ${model.full_input}
+    internal_representation:
+      _target_: conf.internal_representations.SoftplusScaleRepresentation
+  opacities:
+    dimension: 1
+    in_input: ${model.full_input}
+    internal_representation:
+      _target_: conf.internal_representations.ScaledLogitOpacityRepresentation
+  quats:
+    dimension: 4
+    in_input: ${model.full_input}
+    internal_representation:
+      _target_: conf.internal_representations.StandardizedQuatRepresentation
+  sh0:
+    dimension: 3
+    internal_representation:
+      _target_: conf.internal_representations.ClampedRGBColorRepresentation
+  sh:
+    dimension: 9
+    in_input: false
+    in_output: false
+    internal_representation:
+      _target_: conf.internal_representations.OffsetRepresentation # zero init
+  coord_offset:
+    dimension: 3
+    internal_representation:
+      _target_: conf.internal_representations.OffsetRepresentation

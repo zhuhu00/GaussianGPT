@@ -1,0 +1,10 @@
+overfit:
+  scenes: 0 # number of scenes to overfit on, 0 disables overfitting
+  epoch_size: 1000
+  min_val_scenes: 16
+  
+load_normals: false
+
+background_color: white
+center_sample: false
+image_downsample_factor: 1

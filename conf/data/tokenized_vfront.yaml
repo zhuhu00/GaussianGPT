@@ -1,0 +1,25 @@
+# VFront (3D-FRONT) VQ tokens - GPT training on the single dataset.
+defaults:
+  - default
+
+dataset_name: vfront
+
+background_color: black
+
+# Token streams written by tokenize_dataset.py.
+data_path: ???
+# Frozen VQ-VAE that produced the tokens (also used to decode during eval).
+vqvae_path: ???
+
+preprocessed_subpath: v0.025_sigmoid_uniform_tanh/point_cloud/iteration_60000/ckpt.pt
+
+train_split: data_splits/vfront_houses_train.txt
+val_split: data_splits/vfront_houses_val.txt
+
+max_tokens: 16000 # >= longest token sequence in the dataset
+
+load_augmented_tokens: true
+
+min_chunk_occupancy: 0.3
+max_chunk_attempts: 10
+chunk_origin: [null, null, -1]

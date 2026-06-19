@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Claude Code
+.claude/
+CLAUDE.md
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Logs and visualizations
+*.log
+logs/
+vis/
+
+# Slurm / shell wrappers (kept local-only)
+*.job
+*.sh
+
+# Local junk drawer (research one-offs, scratch scripts)
+_misc/
+
+# Default output dir (conf/*.yaml output_dir defaults live under here)
+outputs/
+
+# Generated media
+*.gif
+*.mp4
+*.ply
+*.png
+*.jpg
+*.jpeg
+
+# ... except intended doc/figure assets under fig/
+!fig/
+!fig/**

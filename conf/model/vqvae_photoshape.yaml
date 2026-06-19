@@ -1,0 +1,20 @@
+# PhotoShape VQ-VAE: object-level, finer voxels, view-dependent color.
+# Inherits the main VQ-VAE and overrides the PhotoShape-specific bits.
+#
+# Training overrides used for PhotoShape (pass on the CLI):
+#   training.losses.rerendering.recon_weight=12.5 training.losses.rerendering.vgg_weight=0.1
+#   training.lr_schedule.kind=cosine training.max_epochs=250
+defaults:
+  - vqvae_cnn
+
+stages: 2
+grid_size: 0.008
+
+decoder:
+  prune_thresh: [-1.0, -3.0] # one entry per stage
+
+# Keep higher-order SH so view-dependent color is encoded and predicted.
+feature_configs:
+  sh:
+    in_input: true
+    in_output: true

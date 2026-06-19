@@ -1,0 +1,22 @@
+# PhotoShape VQ tokens - GPT training on the single dataset.
+defaults:
+  - default
+
+dataset_name: photoshape
+
+# Token streams written by tokenize_dataset.py.
+data_path: ???
+# Frozen VQ-VAE that produced the tokens (also used to decode during eval).
+vqvae_path: ???
+
+train_split: null # optional; null uses the default split
+val_split: data_splits/photoshape_val.txt
+
+max_tokens: 8192 # >= longest token sequence in the dataset
+
+load_augmented_tokens: false
+
+# Objects are normalized into a 32^3 grid, so chunking is fixed and uncropped.
+min_chunk_occupancy: 0.0
+max_chunk_attempts: 1
+chunk_origin: [-16, -16, -16]

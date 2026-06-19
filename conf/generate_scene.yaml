@@ -1,0 +1,67 @@
+# Top-level config for generate_scene.py (large multi-chunk scene sampling).
+# Pass the trained GPT via checkpoint=<gpt.ckpt>; run as a sharded array (see below).
+defaults:
+  - _self_
+  - override hydra/job_logging: disabled
+  - override hydra/hydra_logging: disabled
+
+# Each array task is fully independent: shard index/count come from
+# GAUSS_SHARD_ID / GAUSS_NUM_SHARDS env vars (set by the SLURM array wrapper).
+# Tasks share output_dir but only read/write their own rank_XXXX shard files,
+# so they don't need to start or finish in lockstep.
+
+checkpoint: ???
+checkpoint_timeout: 0
+vqvae_checkpoint: null
+output_dir: outputs/generate_scene
+
+num_scenes: ???
+scene_cols_x: 20
+scene_cols_y: 20
+
+temperature: 0.9
+top_k: null
+top_p: 0.9
+feature_temperature: null
+feature_top_k: null
+feature_top_p: null
+
+outpainting_temperature: null
+outpainting_top_k: null
+outpainting_top_p: null
+
+bootstrap_temperature: null
+bootstrap_top_k: null
+bootstrap_top_p: null
+
+bootstrap2_temperature: null
+bootstrap2_top_k: null
+bootstrap2_top_p: null
+
+y_offset: 5
+y_range: 5
+x_offset: 5
+enable_bootstrap: true
+no_empty_columns: false
+resample_empty_columns: true
+max_empty_column_retries: 5
+early_stop_min_occupancy: null # null disables, otherwise in [0, 1]
+
+debug_column_context: false
+seed: 0
+
+decode_outputs: true
+render_topdown: true
+topdown_quantile: 65.0
+topdown_resolution: 1024
+topdown_background_color: white
+
+# Per-shard zip (each task writes its own archive next to its shard).
+zip_outputs: false
+zip_filename: null
+zip_include_decoded: true
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .

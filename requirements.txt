@@ -1,0 +1,17 @@
+ninja
+plyfile
+einops
+lightning==2.5.2
+tensorboard
+vector-quantize-pytorch
+tqdm
+torchmetrics[image]
+hydra-core
+imageio
+opencv-python
+scikit-image
+iopath
+matplotlib
+lpips
+git+https://github.com/nerfstudio-project/gsplat.git@d23d7ca5dd26c3756967304b621ae88521672ed5
+git+https://github.com/facebookresearch/pytorch3d.git@75ebeeaea0908c5527e7b1e305fbc7681382db47

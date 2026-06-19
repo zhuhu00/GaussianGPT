@@ -1,0 +1,21 @@
+# Top-level config for train_gpt.py (GPT training + inline evaluation).
+# Default trains on VFront tokens; use data=tokenized_vfront_ase for the combined model.
+defaults:
+  - _self_
+  - data: tokenized_vfront
+  - model: gpt
+  - training: gpt
+  - override hydra/job_logging: disabled
+  - override hydra/hydra_logging: disabled
+
+experiment:
+  name: default_gpt_experiment
+  log_dir: logs/
+  checkpoint_path: null
+  continue_run: false # auto-find latest checkpoint from prior run of same log_dir/name
+  continue_mode: resume # resume | weights_only
+
+hydra:
+  output_subdir: null # Use null to disable output subdir
+  run:
+    dir: .

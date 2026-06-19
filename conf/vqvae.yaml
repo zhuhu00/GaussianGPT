@@ -1,0 +1,19 @@
+# Top-level config for train_ae.py (VQ-VAE training) and tokenize_dataset.py.
+defaults:
+  - _self_
+  - data: vfront_houses
+  - model: vqvae_cnn
+  - training: vqvae
+  - override hydra/job_logging: disabled
+  - override hydra/hydra_logging: disabled
+
+experiment:
+  name: default_vqvae_experiment
+  log_dir: logs/
+  checkpoint_path: null
+  continue_mode: resume # resume | weights_only
+
+hydra:
+  output_subdir: null # Use null to disable output subdir
+  run:
+    dir: .

@@ -1,0 +1,39 @@
+# Top-level config for complete_chunks.py (chunk completion / outpainting).
+# Pass the trained GPT via checkpoint=<gpt.ckpt> and a tokenized data=<cfg>.
+defaults:
+  - _self_
+  - data: null
+  - model: gpt
+  - override hydra/job_logging: disabled
+  - override hydra/hydra_logging: disabled
+
+checkpoint: ???
+vqvae_checkpoint: null
+output_dir: outputs/complete_chunks
+store_tokens: true
+render_gifs: true
+gif_frames: 120
+gif_fps: 24
+
+num_samples: 64
+batch_size: 4
+temperature: 0.9
+top_k: null
+top_p: 0.9
+seed: 0
+
+dataset: null
+
+completion:
+  enabled: true
+  split: val
+  prompt_mode: spatial_half_x
+  num_completions: 16
+
+shard_id: null
+num_shards: null
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .

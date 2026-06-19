@@ -1,0 +1,24 @@
+# ScanNet++ v2 VQ tokens - GPT training (augmented token streams).
+defaults:
+  - default
+
+dataset_name: spp_v2
+
+background_color: black
+
+# Token streams written by tokenize_dataset.py.
+data_path: ???
+# Frozen VQ-VAE that produced the tokens (also used to decode during eval).
+vqvae_path: ???
+
+train_split: data_splits/spp_train.txt
+val_split: data_splits/spp_val.txt
+
+preprocessed_subpath: ckpts/point_cloud_30000.pt
+load_augmented_tokens: true
+
+max_tokens: 16000 # >= longest token sequence in the dataset
+
+min_chunk_occupancy: 0.3
+max_chunk_attempts: 10
+chunk_origin: [null, null, -1]

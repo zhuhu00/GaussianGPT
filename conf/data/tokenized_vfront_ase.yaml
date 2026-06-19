@@ -1,0 +1,29 @@
+# VFront + ASE VQ tokens mixed - GPT training for the combined release model.
+defaults:
+  - default
+
+dataset_name: vfront
+
+background_color: black
+
+# Primary tokenized dataset (VFront), written by tokenize_dataset.py.
+data_path: ???
+train_split: data_splits/vfront_houses_train.txt
+val_split: data_splits/vfront_houses_val.txt
+preprocessed_subpath: v0.025_sigmoid_uniform_tanh/point_cloud/iteration_60000/ckpt.pt
+
+# Secondary tokenized dataset (ASE) mixed in; set ase_data_path to null to disable mixing.
+ase_data_path: ???
+ase_train_split: data_splits/ase_train.txt
+ase_val_split: data_splits/ase_val.txt
+ase_preprocessed_subpath: ckpts/point_cloud_30000.pt
+
+# Frozen VQ-VAE that produced the tokens (also used to decode during eval).
+vqvae_path: ???
+
+max_tokens: 16000 # >= longest token sequence in the dataset
+load_augmented_tokens: true
+
+min_chunk_occupancy: 0.3
+max_chunk_attempts: 10
+chunk_origin: [null, null, -1]

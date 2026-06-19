@@ -1,0 +1,44 @@
+# 3D-FRONT (vfront) raw Gaussian scenes - VQ-VAE training and tokenization.
+defaults:
+  - points
+
+dataset_name: vfront
+
+# Per-scene Gaussian checkpoints.
+data_path: ???
+# Camera transforms (and rendered images) used by the re-rendering loss.
+transforms_path: ???
+img_path: ???
+
+train_split: data_splits/vfront_houses_train.txt
+val_split: data_splits/vfront_houses_val.txt
+
+gaussian_subpath: v0.025_sigmoid_uniform_tanh/point_cloud/iteration_60000/ckpt.pth
+
+n_images: 12 # images loaded per scene for the re-rendering loss
+
+max_points: 1000000000 # effectively uncapped
+center_sample: false
+voxel_size: 0.025
+
+background_color: black
+
+# Scenes are full floor-level layouts, so train on camera-visible chunks.
+chunk_subsample: true
+chunk_shape: [24, 24, 20]
+chunk_voxel_size: 0.2
+min_chunk_occupancy: 0.2
+max_chunk_attempts: 10
+chunk_origin: [null, null, 0]
+camera_chunk_min_area_ratio: 0.4
+
+depth:
+  enabled: true
+  subdir: depth
+  extension: .exr
+  chunk_mask:
+    enabled: true
+  camera_sampling:
+    enabled: true
+    probe_multiplier: 8
+    depth_stat_stride: 1

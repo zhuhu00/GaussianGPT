@@ -1,0 +1,31 @@
+# PhotoShape GPT preset: single normalized objects on a 32^3 grid
+# (data.chunk_origin = [-16, -16, -16]). Standalone, does not inherit gpt.yaml.
+
+# Transformer size (gpt2-small).
+gpt_size:
+  n_embd: 768
+  n_layer: 12
+  n_head: 12
+  n_kv_head: 12 # < n_head enables GQA
+n_ctx: 8192 # max sequence length, in tokens
+value_embed_every_n_layers: null # ResFormer value embeddings; null = off
+
+# Frozen VQ-VAE, used only to decode samples during eval.
+vqvae:
+  checkpoint_path: null # normally set via data.vqvae_path
+
+# Tokens & vocab.
+num_position_tokens: 1 # per Gaussian; must be 1 with rope_basis=position / hard constraints
+position_vocab_size: 32768 # = chunk_shape^3 (32^3)
+shared_vocab: false # true = position and feature ids share one range, disambiguated by slot
+
+# Chunking: sparse = position+feature tokens per Gaussian; dense = fixed grid, positions implicit.
+dense_chunks: false
+chunk_shape: 32 # voxel grid side length
+chunk_order: xyz
+
+# Positional encoding.
+rope_basis: position # 3D positional RoPE ("sequence" = 1D)
+rope_bos_coord: [-1, -1, -1] # BOS coordinate, outside the grid
+sparse_position_hard_constraints: true # mask sampling to keep positions monotonic (needs num_position_tokens=1)
+learned_pos_embed: false # true = learned absolute pos-embed instead of RoPE (ablation only)

@@ -1,0 +1,40 @@
+# Top-level config for generate_chunks.py (single-chunk generation / evaluation).
+# Pass the trained GPT via checkpoint=<gpt.ckpt> and a tokenized data=<cfg>.
+defaults:
+  - _self_
+  - data: null
+  - model: gpt
+  - override hydra/job_logging: disabled
+  - override hydra/hydra_logging: disabled
+
+checkpoint: ???
+checkpoint_timeout: 0
+remove_checkpoint: false
+vqvae_checkpoint: null
+output_dir: outputs/eval
+skip_metrics: false
+highres: false
+store_samples: false
+gif_frames: 120
+gif_fps: 24
+
+num_samples: 4
+batch_size: 4
+views: 10
+temperature: 1.0
+top_k: null
+top_p: null
+background_color: null
+max_length: 65536
+
+dataset: null
+
+completion:
+  enabled: false
+  split: val
+  prompt_fraction: 0.5
+
+hydra:
+  output_subdir: null
+  run:
+    dir: .

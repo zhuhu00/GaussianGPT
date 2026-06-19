@@ -1,0 +1,33 @@
+defaults:
+  - default
+
+n_images: 4
+preload: false # if true tries to load all data into memory, useful if it can actually fit
+deterministic_sampling: false
+
+frustum_subsample: false
+frustum_subsample_margin: 0.2 # relative margin on each axis, e.g. 0.3 = 30% of image size
+
+chunk_subsample: false
+chunk_shape: [24, 24, 20]
+chunk_voxel_size: 0.2
+min_chunk_occupancy: 0.2
+max_chunk_attempts: 10
+chunk_origin: [null, null, 0]
+camera_chunk_min_area_ratio: 0.4
+
+train_augmentation:
+  enabled: false
+  probability: 1.0
+  allow_flip: false
+
+depth:
+  enabled: false
+  subdir: depth
+  extension: .exr
+  chunk_mask:
+    enabled: false
+  camera_sampling:
+    enabled: false
+    probe_multiplier: 3
+    depth_stat_stride: 8
