@@ -15,7 +15,6 @@ make_unique: false
 gaussians_per_voxel: 1
 
 encoder:
-  in_c: ${model.outer_dim}
   embed_dim: ${model.embed_dim}
   max_channel: ${model.max_channel}
   leaky: ${model.leaky}

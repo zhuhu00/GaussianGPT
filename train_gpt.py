@@ -21,7 +21,7 @@ from omegaconf import OmegaConf
 
 from conf.dataclasses import GradientClippingMode
 from data.vfront_dataset import VFrontPreprocessedDataModule
-from generate_chunks import sample_and_evaluate
+from generate_chunks import sample_and_render
 from model.gaussian_gpt import GaussianGPT
 from utils.optim import (
     FreeCacheCallback,
@@ -181,8 +181,6 @@ class EvaluateCallback(lightning.Callback):
         vqvae_checkpoint: Optional[str] = None,
         max_length: Optional[int] = None,
         batch_size: int = 4,
-        views: int = 10,
-        skip_metrics: bool = False,
         store_samples: bool = False,
         data_cfg: Optional[dict] = None,
     ):
@@ -196,8 +194,6 @@ class EvaluateCallback(lightning.Callback):
         self.background_color = background_color
         self.max_length = max_length
         self.batch_size = batch_size
-        self.views = views
-        self.skip_metrics = skip_metrics
         self.store_samples = store_samples
         self.data_cfg = data_cfg
 
@@ -246,7 +242,7 @@ class EvaluateCallback(lightning.Callback):
                 f"with {rank_num_samples} samples (seed={rank_seed})."
             )
             pl_module.eval()
-            sample_and_evaluate(
+            sample_and_render(
                 dataset=self.dataset,
                 output_dir=Path(output_directory),
                 num_samples=rank_num_samples,
@@ -255,13 +251,10 @@ class EvaluateCallback(lightning.Callback):
                 top_k=self.top_k,
                 top_p=self.top_p,
                 max_length=self.max_length,
-                views=self.views,
-                high_size=(512, 512),
-                low_size=(128, 128),
                 background_color=self.background_color,
-                skip_metrics=self.skip_metrics,
                 gif_frames=120,
                 gif_fps=24,
+                render_gifs=True,
                 vqvae_checkpoint=self.vqvae_checkpoint,
                 store_samples=self.store_samples,
                 data_cfg=self.data_cfg,
@@ -386,7 +379,7 @@ def train(cfg):
     if eval_data_config is None:
         raise ValueError("training.output.eval_data_config must be set for evaluation.")
     eval_cfg = compose(
-        config_name="gpt_eval",
+        config_name="generate_chunks",
         overrides=[f"data={eval_data_config}"],
     )
     data_cfg = OmegaConf.to_container(eval_cfg.data, resolve=True)
@@ -426,8 +419,6 @@ def train(cfg):
             data_config=cfg.training.output.eval_data_config,
             vqvae_checkpoint=cfg.model.vqvae.checkpoint_path,
             batch_size=cfg.training.output.batch_size,
-            views=cfg.training.output.views,
-            skip_metrics=cfg.training.output.skip_metrics,
             store_samples=cfg.training.output.store_samples,
             data_cfg=data_cfg,
         )

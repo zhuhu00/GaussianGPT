@@ -33,6 +33,7 @@ context-aware 3D generation.
 
 ## News
 
+- **2026-07-01** - Pre-trained scene-level VQ-VAE and GPT checkpoints released.
 - **2026-06-19** - Training and inference code released.
 - **2026-06-18** - GaussianGPT accepted to ECCV 2026!
 
@@ -79,6 +80,7 @@ If you find GaussianGPT useful, please consider citing:
 - [Installation](#installation)
 - [Data](#data)
 - [Training](#training)
+- [Checkpoints](#checkpoints)
 - [Inference](#inference)
 - [Rendering](#rendering)
 - [Acknowledgements](#acknowledgements)
@@ -130,20 +132,24 @@ these two — build them individually to see the full nvcc error, and make sure
 git clone https://github.com/Dao-AILab/flash-attention.git
 cd flash-attention
 git checkout v2.8.2
-export FLASH_ATTN_CUDA_ARCHS=80
 MAX_JOBS=4 python setup.py install
 ```
 
 <details>
-<summary>Why <code>FLASH_ATTN_CUDA_ARCHS=80</code> and a low <code>MAX_JOBS</code>?</summary>
+<summary>Troubleshooting: <code>MAX_JOBS=1</code></summary>
+
+Each nvcc job needs several GB of RAM. Start `MAX_JOBS` low and raise it only if
+you have the RAM to spare; lower it (down to 1) if the build OOMs / gets "Killed".
+
+</details>
+
+<details>
+<summary>Optional: <code>FLASH_ATTN_CUDA_ARCHS=80</code></summary>
 
 flash-attn compiles its own arch set (sm_80;90;100;120) and ignores
 `TORCH_CUDA_ARCH_LIST`. Its Ampere kernels are sm_80, which also run on sm_86
 (3090/A6000) via same-major forward-compat, so restricting to sm_80 covers all
 the target GPUs above and cuts both compile time and per-job RAM substantially.
-
-Each nvcc job needs several GB of RAM. Start `MAX_JOBS` low and raise it only if
-you have the RAM to spare; lower it (down to 1) if the build OOMs / gets "Killed".
 
 </details>
 
@@ -203,8 +209,8 @@ python setup.py install --blas_include_dirs="${CONDA_PREFIX}/include" --blas=ope
 Not required for the default pipeline. Only needed if you enable
 `model.make_unique=true` (collapse each voxel to its highest-opacity Gaussian),
 which is **off** in the shipped configs. The import is lazy, so the dependency is
-only touched when that option is turned on. In our tests this was a very minimal
-performance improvement that comes with computaional overhead.
+only touched when that option is turned on. In our tests it gave a negligible
+quality gain for the added compute.
 
 ```bash
 pip install --no-build-isolation torch-scatter -f "https://data.pyg.org/whl/torch-2.8.0+cu129.html"
@@ -330,6 +336,28 @@ python train_gpt.py \
 - `experiment.continue_run=true` auto-finds the latest checkpoint from a prior
   run with the same `log_dir`/`name`.
 
+## Checkpoints
+
+Pre-trained VQ-VAE and GPT checkpoints are hosted at
+`kaldir.vc.cit.tum.de/gaussiangpt` (sizes and SHA256 checksums in the served
+[README](https://kaldir.vc.cit.tum.de/gaussiangpt/README.md)). Each GPT must be
+paired with the VQ-VAE listed alongside it.
+
+```bash
+# Trained on 3D-FRONT
+wget https://kaldir.vc.cit.tum.de/gaussiangpt/vqvae_vfront.ckpt
+wget https://kaldir.vc.cit.tum.de/gaussiangpt/gpt_vfront.ckpt
+
+# Pre-trained on 3D-FRONT + ASE, fine-tuned on 3D-FRONT
+wget https://kaldir.vc.cit.tum.de/gaussiangpt/vqvae_both.ckpt
+wget https://kaldir.vc.cit.tum.de/gaussiangpt/gpt_both.ckpt
+```
+
+Pass them to any inference entry point as `checkpoint=<gpt.ckpt>
+vqvae_checkpoint=<vqvae.ckpt>` (see [Inference](#inference)).
+
+Object-level checkpoints are not yet available and will be added soon.
+
 ## Inference
 
 All inference entry points take the trained GPT via `checkpoint=<gpt.ckpt>` and
@@ -341,9 +369,9 @@ unconditional sampling does not touch them.
 
 ### Single-chunk generation / evaluation
 
-Samples one chunk per scene, decodes through the VQ-VAE, renders camera
-trajectories, and (unless `skip_metrics=true`) computes evaluation metrics. This
-module also provides the inline-eval helpers imported by `train_gpt.py`.
+Samples one chunk per scene, decodes through the VQ-VAE, and renders camera
+trajectories. This module also provides the inline-eval helpers imported by
+`train_gpt.py`.
 
 ```bash
 # Unconditional generation: only the GPT and a VQ-VAE checkpoint are needed.
@@ -353,10 +381,11 @@ python generate_chunks.py \
     num_samples=4 temperature=1.0
 ```
 
-Key options (see `conf/gpt_eval.yaml`, the config `generate_chunks.py` loads):
-`num_samples`, `batch_size`, `views`, `temperature`/`top_k`/`top_p`, `highres`,
-`skip_metrics`, `store_samples`. Outputs go to `output_dir` (`outputs/eval` by
-default).
+Key options (see `conf/generate_chunks.yaml`, the config `generate_chunks.py` loads):
+`num_samples`, `batch_size`, `temperature`/`top_k`/`top_p`, `seed`,
+`store_samples`, `render_gifs` (set `render_gifs=false` to skip GIF rendering,
+e.g. to only dump samples via `store_samples=true`). Outputs go to `output_dir`
+(`outputs/eval` by default).
 
 <details>
 <summary>Prompt-conditioned completion (sequence-prefix sanity check)</summary>
@@ -364,7 +393,7 @@ default).
 `generate_chunks.py` can also condition on a real scene by enabling
 `completion`: it keeps the first `prompt_fraction` of the token sequence and
 continues it, producing one completion per scene. This is a quick sanity check
-on the prior, cut by **sequence length**. For completion cut by **spatial
+on the prior, used primarily during training. For completion cut by **spatial
 extent**, use `complete_chunks.py` below.
 
 ```bash
@@ -392,11 +421,11 @@ python complete_chunks.py \
     checkpoint=<gpt.ckpt> \
     data=tokenized_vfront \
     data.data_path=<tokens_dir> data.vqvae_path=<vqvae.ckpt> \
-    completion.enabled=true completion.prompt_mode=spatial_half_x
+    prompt_mode=spatial_half_x
 ```
 
-Key options (see `conf/complete_chunks.yaml`): `completion.split`,
-`completion.prompt_mode`, `completion.num_completions`, `num_samples`, the
+Key options (see `conf/complete_chunks.yaml`): `split`, `prompt_mode`,
+`num_completions`, `num_samples`, the
 sampling params, and `render_gifs`/`store_tokens`. Supports sharding via
 `shard_id`/`num_shards`. Outputs go to `outputs/complete_chunks`.
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import hydra
 import lightning
@@ -208,7 +208,7 @@ def _build_completion_dataset(
 
 
 @torch.no_grad()
-def sample_and_evaluate(
+def sample_and_render(
     dataset: Optional[str],
     output_dir: Path,
     num_samples: int,
@@ -217,13 +217,10 @@ def sample_and_evaluate(
     top_k: Optional[int],
     top_p: Optional[float],
     max_length: Optional[int],
-    views: int,
-    high_size: Tuple[int, int],
-    low_size: Tuple[int, int],
     background_color: str,
-    skip_metrics: bool,
     gif_frames: int,
     gif_fps: int,
+    render_gifs: bool,
     vqvae_checkpoint: Optional[str],
     store_samples: bool,
     data_cfg: Dict[str, Any],
@@ -263,7 +260,13 @@ def sample_and_evaluate(
         gpt = gpt.eval().to(device)
 
     gif_dir = output_dir / "gif"
-    gif_dir.mkdir(parents=True, exist_ok=True)
+    if render_gifs:
+        gif_dir.mkdir(parents=True, exist_ok=True)
+    render_desc = (
+        f"as gifs ({gif_frames} frames @ {gif_fps} fps)"
+        if render_gifs
+        else "without rendering (store_samples only)"
+    )
 
     samples_dir = output_dir / "samples" if store_samples else None
     if samples_dir is not None:
@@ -289,7 +292,7 @@ def sample_and_evaluate(
         print(
             f"Completing {num_samples} scenes from '{completion_split}' split "
             f"with prompt_fraction={prompt_fraction:.2f} "
-            f"as gifs ({gif_frames} frames @ {gif_fps} fps).",
+            f"{render_desc}.",
             flush=True,
         )
 
@@ -397,14 +400,15 @@ def sample_and_evaluate(
             render_partial = _center_scene_reference(partial_scene, gt_scene)
             render_completed = _center_scene_reference(completed_scene, gt_scene)
 
-            gif_path = gif_dir / f"sample_{global_sample_idx:04d}.gif"
-            render_and_save_trajectory_strip(
-                [render_partial, render_completed, render_gt],
-                str(gif_path),
-                num_frames=gif_frames,
-                fps=gif_fps,
-                background_color=background_color,
-            )
+            if render_gifs:
+                gif_path = gif_dir / f"sample_{global_sample_idx:04d}.gif"
+                render_and_save_trajectory_strip(
+                    [render_partial, render_completed, render_gt],
+                    str(gif_path),
+                    num_frames=gif_frames,
+                    fps=gif_fps,
+                    background_color=background_color,
+                )
 
             if samples_dir is not None:
                 for label, scene in (
@@ -432,7 +436,7 @@ def sample_and_evaluate(
         print(
             f"Sampling {num_samples} scenes "
             f"(batch size {batch_size}, temperature {temperature}, top_k {top_k}, top_p {top_p}) "
-            f"as gifs ({gif_frames} frames @ {gif_fps} fps).",
+            f"{render_desc}.",
             flush=True,
         )
         total_samples = num_samples
@@ -477,15 +481,16 @@ def sample_and_evaluate(
             scenes = _normalize_samples(batch_samples)
 
             for scene in scenes:
-                render_scene = center_scene_aabb(scene)
-                gif_path = gif_dir / f"sample_{global_sample_idx:04d}.gif"
-                render_and_save_trajectory(
-                    render_scene,
-                    str(gif_path),
-                    num_frames=gif_frames,
-                    fps=gif_fps,
-                    background_color=background_color,
-                )
+                if render_gifs:
+                    render_scene = center_scene_aabb(scene)
+                    gif_path = gif_dir / f"sample_{global_sample_idx:04d}.gif"
+                    render_and_save_trajectory(
+                        render_scene,
+                        str(gif_path),
+                        num_frames=gif_frames,
+                        fps=gif_fps,
+                        background_color=background_color,
+                    )
 
                 if samples_dir is not None:
                     sample_stem = f"sample_{global_sample_idx:04d}.pt"
@@ -502,14 +507,6 @@ def sample_and_evaluate(
         print(
             f"Generated {total_samples} samples in {elapsed:.2f}s "
             f"({elapsed / max(total_samples, 1):.3f}s per scene).",
-            flush=True,
-        )
-
-    if skip_metrics:
-        print("Skipping metric evaluation (skip_metrics=True).", flush=True)
-    else:
-        print(
-            "Skipping metric evaluation because evaluation renders gifs only.",
             flush=True,
         )
 
@@ -566,7 +563,7 @@ def _normalize_samples(samples: Any) -> List[GaussianScene]:
     return scenes
 
 
-@hydra.main(config_path="conf", config_name="gpt_eval", version_base=None)
+@hydra.main(config_path="conf", config_name="generate_chunks", version_base=None)
 def main(cfg: DictConfig) -> None:
     completion_cfg = (
         OmegaConf.to_container(cfg.get("completion"), resolve=True)
@@ -647,12 +644,9 @@ def main(cfg: DictConfig) -> None:
 
     output_dir = Path(cfg.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    lightning.seed_everything(0)
+    lightning.seed_everything(int(cfg.seed))
 
-    high_size = (512, 512)
-    low_size = (128, 128)
-
-    sample_and_evaluate(
+    sample_and_render(
         dataset=dataset,
         output_dir=output_dir,
         num_samples=cfg.num_samples,
@@ -661,13 +655,10 @@ def main(cfg: DictConfig) -> None:
         top_k=cfg.get("top_k"),
         top_p=cfg.get("top_p"),
         max_length=cfg.get("max_length"),
-        views=cfg.views,
-        high_size=high_size,
-        low_size=low_size,
         background_color=background_color,
-        skip_metrics=cfg.skip_metrics,
         gif_frames=getattr(cfg, "gif_frames", 120),
         gif_fps=getattr(cfg, "gif_fps", 24),
+        render_gifs=bool(cfg.get("render_gifs", True)),
         vqvae_checkpoint=vqvae_checkpoint,
         store_samples=cfg.store_samples,
         data_cfg=data_cfg,

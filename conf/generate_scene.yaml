@@ -15,7 +15,7 @@ checkpoint_timeout: 0
 vqvae_checkpoint: null
 output_dir: outputs/generate_scene
 
-num_scenes: ???
+num_scenes: 1
 scene_cols_x: 20
 scene_cols_y: 20
 

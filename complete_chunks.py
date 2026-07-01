@@ -4,7 +4,7 @@
 #       checkpoint=<path/to/gpt.ckpt> \
 #       vqvae_checkpoint=<path/to/vqvae.ckpt> \
 #       num_samples=100000 \
-#       completion.prompt_mode=spatial_quarter_x \
+#       prompt_mode=spatial_quarter_x \
 #       output_dir=<output_dir>
 #
 #   To restrict to one or more scenes (note: Hydra requires + prefix for keys not in the config struct):
@@ -27,10 +27,6 @@ from data.vfront_dataset import VFrontPreprocessedDataModule
 from model.gaussian_gpt import GaussianGPT
 from model.gaussian_vqvae import GaussianVQVAE
 from omegaconf import DictConfig, OmegaConf
-from utils.completion_resample import (
-    DEFAULT_MAX_RETRIES,
-    complete_with_empty_column_retry,
-)
 from utils.pos_tokens import pos_tokens_to_centered_coords
 from utils.render import (
     GaussianScene,
@@ -445,7 +441,6 @@ def run_completion_inference(
     cfg: DictConfig,
     data_cfg: Dict[str, Any],
     dataset_name: str,
-    completion_cfg: Dict[str, Any],
     output_dir: Path,
 ) -> None:
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -485,18 +480,18 @@ def run_completion_inference(
     if getattr(gpt, "vqvae", None) is not None:
         gpt.vqvae.set_background_color(background_color)
 
-    completion_split = str(completion_cfg.get("split", "val"))
-    num_completions = int(completion_cfg.get("num_completions", 1))
+    completion_split = str(cfg.get("split", "val"))
+    num_completions = int(cfg.get("num_completions", 1))
     if num_completions < 1:
-        raise ValueError("completion.num_completions must be >= 1.")
-    prompt_mode = str(completion_cfg.get("prompt_mode", "spatial_half_x"))
+        raise ValueError("num_completions must be >= 1.")
+    prompt_mode = str(cfg.get("prompt_mode", "spatial_half_x"))
     if prompt_mode == "spatial_half_x":
         prompt_fraction = 0.5
     elif prompt_mode == "spatial_quarter_x":
         prompt_fraction = 0.25
     else:
         raise ValueError(
-            "completion.prompt_mode must be one of "
+            "prompt_mode must be one of "
             "{'spatial_half_x', 'spatial_quarter_x'}."
         )
 
@@ -702,24 +697,16 @@ def run_completion_inference(
 
                 if remaining_len > 0:
                     if gpt.dense_chunks:
-                        effective_max_retries = (
-                            int(cfg.get("resample_max_retries", DEFAULT_MAX_RETRIES))
-                            if bool(cfg.get("resample_empty_columns", True))
-                            else 0
-                        )
-                        completed_tokens, _retry_stats = (
-                            complete_with_empty_column_retry(
-                                gpt,
-                                prefix_tokens,
-                                full_len=full_len,
-                                pad_id=pad_id,
-                                temperature=float(cfg.temperature),
-                                top_k=cfg.get("top_k"),
-                                top_p=cfg.get("top_p"),
-                                seed=completion_seed,
-                                max_retries=effective_max_retries,
-                            )
-                        )
+                        completed_tokens = gpt.gpt.sample_sequence_with_prompt(
+                            prefix_tokens,
+                            max_new_tokens=remaining_len,
+                            num_samples=1,
+                            temperature=float(cfg.temperature),
+                            top_k=cfg.get("top_k"),
+                            top_p=cfg.get("top_p"),
+                            stop_on_eos=False,
+                            seed=completion_seed,
+                        )[0]
                     else:
                         sparse_budget = max(0, int(gpt.model_config.n_ctx) - prefix_len)
                         completed_tokens = gpt.gpt.sample_sequence_with_prompt(
@@ -734,21 +721,6 @@ def run_completion_inference(
                         )[0]
                 else:
                     completed_tokens = prefix_tokens
-
-                if gpt.dense_chunks:
-                    # complete_with_empty_column_retry already guarantees full_len,
-                    # but we keep the safety pad/truncate for the remaining_len==0
-                    # branch above and for sparse fallbacks.
-                    if completed_tokens.numel() > full_len:
-                        completed_tokens = completed_tokens[:full_len]
-                    elif completed_tokens.numel() < full_len:
-                        pad = torch.full(
-                            (full_len - completed_tokens.numel(),),
-                            pad_id,
-                            device=device,
-                            dtype=torch.long,
-                        )
-                        completed_tokens = torch.cat([completed_tokens, pad], dim=0)
 
                 token_path = None
                 if store_tokens:
@@ -921,16 +893,6 @@ def run_completion_inference(
 
 @hydra.main(config_path="conf", config_name="complete_chunks", version_base=None)
 def main(cfg: DictConfig) -> None:
-    completion_cfg = (
-        OmegaConf.to_container(cfg.get("completion"), resolve=True)
-        if cfg.get("completion")
-        else {}
-    )
-    if not isinstance(completion_cfg, dict):
-        raise TypeError("Expected `cfg.completion` to convert to a dictionary.")
-    if not bool(completion_cfg.get("enabled", True)):
-        raise ValueError("complete_chunks requires completion.enabled=true.")
-
     data_cfg: Dict[str, Any] = {}
     if cfg.get("data") is not None:
         data_cfg = OmegaConf.to_container(cfg.data, resolve=True)
@@ -962,7 +924,6 @@ def main(cfg: DictConfig) -> None:
         cfg=cfg,
         data_cfg=data_cfg,
         dataset_name=str(dataset_name),
-        completion_cfg=completion_cfg,
         output_dir=output_dir,
     )
 

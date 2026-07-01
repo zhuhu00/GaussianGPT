@@ -15,7 +15,7 @@ render_gifs: true
 gif_frames: 120
 gif_fps: 24
 
-num_samples: 64
+num_samples: 1
 batch_size: 4
 temperature: 0.9
 top_k: null
@@ -24,11 +24,9 @@ seed: 0
 
 dataset: null
 
-completion:
-  enabled: true
-  split: val
-  prompt_mode: spatial_half_x
-  num_completions: 16
+split: val
+prompt_mode: spatial_half_x
+num_completions: 16
 
 shard_id: null
 num_shards: null

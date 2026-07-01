@@ -12,20 +12,18 @@ checkpoint_timeout: 0
 remove_checkpoint: false
 vqvae_checkpoint: null
 output_dir: outputs/eval
-skip_metrics: false
-highres: false
 store_samples: false
+render_gifs: true
 gif_frames: 120
 gif_fps: 24
 
-num_samples: 4
+num_samples: 1
 batch_size: 4
-views: 10
-temperature: 1.0
+temperature: 0.9
 top_k: null
-top_p: null
+top_p: 0.9
 background_color: null
-max_length: 65536
+seed: 0
 
 dataset: null
 

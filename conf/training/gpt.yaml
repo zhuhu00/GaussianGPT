@@ -2,7 +2,7 @@ defaults:
   - default
 
 # optimization (Muon + AdamW; see utils/optim.py)
-lr: 1e-4
+# NB: GPT uses nanochat's hardcoded per-group LRs, so training.lr is not read here.
 weight_decay: 0.2
 muon_weight_decay_schedule: true # linearly decay weight decay over training
 
@@ -25,9 +25,6 @@ output:
   top_k: null
   top_p: 0.9
   batch_size: 4
-  views: 10
-  highres: false
-  skip_metrics: false
   store_samples: true
   eval_data_config: vfront_houses # raw data config composed for inline eval rendering
 
