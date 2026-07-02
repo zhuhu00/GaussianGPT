@@ -225,17 +225,42 @@ possible. Please refer to the respective sources for licensing and download inst
 
 | Dataset | Source data | Gaussians |
 | --- | --- | --- |
-| PhotoShape | [original data](https://github.com/keunhong/photoshape) | optimized using simplified [Scaffold-GS](https://city-super.github.io/scaffold-gs/) |
+| PhotoShape | [original data](https://github.com/keunhong/photoshape) | optimized with Voxel-GS |
 | ASE | [original data](https://www.projectaria.com/datasets/ase/) | from [SceneSplat-49k](https://huggingface.co/datasets/GaussianWorld/aria_synthetic_envs_mcmc_3dgs_new) |
-| 3D-FRONT | [original data](https://tianchi.aliyun.com/specials/promotion/alibaba-3d-scene-dataset) (no longer available) | optimized using simplified [Scaffold-GS](https://city-super.github.io/scaffold-gs/) |
+| 3D-FRONT | [original data](https://tianchi.aliyun.com/specials/promotion/alibaba-3d-scene-dataset) (no longer available) | optimized with Voxel-GS |
 
-**3D-FRONT note:** the original source data is no longer available, but more recent
-re-releases (e.g. [this one](https://huggingface.co/datasets/huanngzh/3D-Front)) should
-work similarly.
+<details>
+<summary>3D-FRONT availability</summary>
 
-**Scaffold-GS note:** for the PhotoShape and 3D-FRONT Gaussians we use a simplified
-Scaffold-GS: no MLP, one Gaussian per voxel, and no hierarchy. Gaussians are initialized
-from depth maps and anchors are not adjusted during optimization.
+The original source data is no longer available, but more recent re-releases (e.g.
+[this one](https://huggingface.co/datasets/huanngzh/3D-Front)) should work similarly.
+
+</details>
+
+<details>
+<summary>Data format</summary>
+
+- **PhotoShape** — standard Inria-style 3DGS `.ply` files.
+- **3D-FRONT** — PyTorch dicts; easiest to follow the data-loading code directly.
+
+Our dicts hold the default 3DGS attributes, but split position into `anchor` (3D anchor
+positions) and `offset`. `f_dc`/`f_rest` hold the SH coefficients; all other attributes
+are stored **pre-activation** (logits).
+
+</details>
+
+<details>
+<summary>Voxel-GS preprocessing</summary>
+
+Voxel-GS is the simplified [Scaffold-GS](https://city-super.github.io/scaffold-gs/) from
+[L3DG](https://arxiv.org/pdf/2410.13530) — no MLP, one Gaussian per voxel, no hierarchy.
+
+- **PhotoShape** — L3DG Voxel-GS as-is (paper Secs. 3.2.1, 3.4).
+- **3D-FRONT** — same, with: point cloud from back-projected depth maps; no scene
+  normalization; 2.5 cm voxels; anchor densification off; 60k iterations; SH degree
+  capped at 1; scales bounded by `2 * voxel_size * sigmoid()`.
+
+</details>
 
 ## Training
 
